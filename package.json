@@ -1,0 +1,31 @@
+{
+  "name": "mx",
+  "version": "1.0.0",
+  "type": "module",
+  "bin": {
+    "mx": "index.js"
+  },
+  "files": [
+    "index.js"
+  ],
+  "scripts": {
+    "test": "node --test test.js",
+    "fmt": "prettier --write ."
+  },
+  "repository": "maml-dev/mx",
+  "homepage": "https://maml.dev",
+  "description": "MAML cli",
+  "author": "Anton Medvedev <anton@medv.io>",
+  "license": "MIT",
+  "dependencies": {
+    "maml-ast": "^0.0.2"
+  },
+  "devDependencies": {
+    "prettier": "^3.8.1"
+  },
+  "prettier": {
+    "semi": false,
+    "singleQuote": true,
+    "endOfLine": "lf"
+  }
+}
