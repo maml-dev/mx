@@ -18,7 +18,7 @@
   "author": "Anton Medvedev <anton@medv.io>",
   "license": "MIT",
   "dependencies": {
-    "maml-ast": "^0.0.2"
+    "maml-ast": "^1.0.0"
   },
   "devDependencies": {
     "prettier": "^3.8.1"
