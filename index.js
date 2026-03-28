@@ -3,7 +3,13 @@ import fs from 'node:fs'
 import process from 'node:process'
 import { parse, print } from 'maml-ast'
 
-void (function main() {
+async function readStdin() {
+  const chunks = []
+  for await (const chunk of process.stdin) chunks.push(chunk)
+  return Buffer.concat(chunks).toString('utf8')
+}
+
+void (async function main() {
   let flagHelp = false
   const args = []
   for (const arg of process.argv.slice(2)) {
@@ -31,7 +37,7 @@ void (function main() {
     colon: color(0),
   }
 
-  let fd = 0 // stdin
+  let input
   if (args.length > 0) {
     let filename = isFile(fs, args[0])
       ? args.shift()
@@ -40,11 +46,14 @@ void (function main() {
         : false
     if (filename) {
       globalThis.__file__ = filename
-      fd = fs.openSync(filename, 'r')
+      input = fs.readFileSync(filename, 'utf8')
     }
   }
+  if (input === undefined) {
+    input = await readStdin()
+  }
 
-  const doc = parse(fs.readFileSync(fd, 'utf8'))
+  const doc = parse(input)
   reduce(doc, args, colors)
 })()
 
