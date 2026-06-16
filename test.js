@@ -97,6 +97,42 @@ describe('iterate', () => {
     assert.equal(stdout, '[\n  "a"\n  "b"\n  "c"\n]\n')
   })
 
+  test('missing property yields null while iterating', () => {
+    const { stdout } = mx([{ name: 'a' }, { none: 1 }], '.[].name')
+    assert.equal(stdout, '[\n  "a"\n  null\n]\n')
+  })
+
+  test('empty array yields empty array', () => {
+    const { stdout } = mx([], '.[]')
+    assert.equal(stdout, '[]\n')
+  })
+
+  test('mapping over empty array yields empty array', () => {
+    const { stdout } = mx({ users: [] }, '.users[].name')
+    assert.equal(stdout, '[]\n')
+  })
+
+  test('null propagates through deeper access', () => {
+    const { stdout } = mx([{ a: { b: 1 } }, { x: 1 }], '.[].a.b')
+    assert.equal(stdout, '[\n  1\n  null\n]\n')
+  })
+
+  test('out-of-bounds index yields null while iterating', () => {
+    const { stdout } = mx([[1], [2, 3]], '.[][1]')
+    assert.equal(stdout, '[\n  null\n  3\n]\n')
+  })
+
+  test('.[][] flattens two levels', () => {
+    const { stdout } = mx([[1, 2], [3]], '.[][]')
+    assert.equal(stdout, '[\n  1\n  2\n  3\n]\n')
+  })
+
+  test('error on type mismatch while iterating', () => {
+    const { status, stderr } = mx([1, 2], '.[].name')
+    assert.equal(status, 1)
+    assert.match(stderr, /Cannot access .name on Integer/)
+  })
+
   test('error iterating non-array', () => {
     const { status, stderr } = mx({ a: 1 }, '.[]')
     assert.equal(status, 1)
@@ -107,6 +143,15 @@ describe('iterate', () => {
     const { status, stderr } = mx([{ x: 1 }], '.[].x = 5')
     assert.equal(status, 1)
     assert.match(stderr, /Cannot assign through \[] iteration/)
+  })
+
+  // File input runs synchronously (no stdin await), so it exercises the
+  // null-yielding lenient path during module load — guards the NULL TDZ bug.
+  test('lenient null works with file input', () => {
+    const file = tmpFile([{ name: 'a' }, { none: 1 }])
+    const { status, stdout } = mx('', file, '.[].name')
+    assert.equal(status, 0)
+    assert.equal(stdout, '[\n  "a"\n  null\n]\n')
   })
 })
 

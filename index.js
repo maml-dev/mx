@@ -3,6 +3,8 @@ import fs from 'node:fs'
 import process from 'node:process'
 import { parse, print } from 'maml-ast'
 
+const NULL = { type: 'Null', value: null }
+
 async function readStdin() {
   const chunks = []
   for await (const chunk of process.stdin) chunks.push(chunk)
@@ -85,20 +87,29 @@ function arrayNode(values) {
   }
 }
 
-// Descend one step into a node, returning the child's value node.
-function descend(current, step) {
+// Descend one step into a node, returning the child's value node. When
+// `lenient` is set (during iteration), missing properties or indices yield
+// null instead of throwing, matching jq's behaviour.
+function descend(current, step, lenient) {
   if (current.type === 'Document') current = current.value
+  if (lenient && current.type === 'Null') return NULL
   if (step.type === 'prop') {
     if (current.type !== 'Object')
       throw new Error(`Cannot access .${step.name} on ${current.type}`)
     const prop = current.properties.find((p) => p.key.value === step.name)
-    if (!prop) throw new Error(`Property "${step.name}" not found`)
+    if (!prop) {
+      if (lenient) return NULL
+      throw new Error(`Property "${step.name}" not found`)
+    }
     return prop.value
   } else {
     if (current.type !== 'Array')
       throw new Error(`Cannot access [${step.index}] on ${current.type}`)
     const el = current.elements[step.index]
-    if (!el) throw new Error(`Index ${step.index} out of bounds`)
+    if (!el) {
+      if (lenient) return NULL
+      throw new Error(`Index ${step.index} out of bounds`)
+    }
     return el.value
   }
 }
@@ -118,7 +129,7 @@ function query(node, path) {
       nodes = next
       iterated = true
     } else {
-      nodes = nodes.map((current) => descend(current, step))
+      nodes = nodes.map((current) => descend(current, step, iterated))
     }
   }
   return iterated ? arrayNode(nodes) : nodes[0]
