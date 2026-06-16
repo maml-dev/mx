@@ -14,8 +14,14 @@ function mx(input, ...args) {
 
 let tmpCounter = 0
 function tmpFile(content) {
-  const file = path.join(os.tmpdir(), `mx-test-${process.pid}-${tmpCounter++}.json`)
-  fs.writeFileSync(file, typeof content === 'string' ? content : JSON.stringify(content))
+  const file = path.join(
+    os.tmpdir(),
+    `mx-test-${process.pid}-${tmpCounter++}.json`,
+  )
+  fs.writeFileSync(
+    file,
+    typeof content === 'string' ? content : JSON.stringify(content),
+  )
   return file
 }
 
@@ -88,7 +94,10 @@ describe('iterate', () => {
   })
 
   test('.prop[].nested maps over nested array', () => {
-    const { stdout } = mx({ users: [{ name: 'a' }, { name: 'b' }] }, '.users[].name')
+    const { stdout } = mx(
+      { users: [{ name: 'a' }, { name: 'b' }] },
+      '.users[].name',
+    )
     assert.equal(stdout, '[\n  "a"\n  "b"\n]\n')
   })
 
@@ -168,7 +177,10 @@ describe('assign', () => {
 
   test('replaces nested with array', () => {
     const { stdout } = mx({ a: { b: 0 } }, '.a.b = [1, 2, 3]')
-    assert.equal(stdout, '{\n  "a": {\n    "b": [\n      1\n      2\n      3\n    ]\n  }\n}\n')
+    assert.equal(
+      stdout,
+      '{\n  "a": {\n    "b": [\n      1\n      2\n      3\n    ]\n  }\n}\n',
+    )
   })
 
   test('replaces array element', () => {
@@ -188,7 +200,10 @@ describe('save', () => {
     const file = tmpFile({ a: 1, b: { c: [10, 20, 30] } })
     const { stdout } = mx('', file, '.b.c[0] = 99', 'save')
     const onDisk = fs.readFileSync(file, 'utf8')
-    assert.equal(onDisk, '{\n  "a": 1\n  "b": {\n    "c": [\n      99\n      20\n      30\n    ]\n  }\n}\n')
+    assert.equal(
+      onDisk,
+      '{\n  "a": 1\n  "b": {\n    "c": [\n      99\n      20\n      30\n    ]\n  }\n}\n',
+    )
     assert.equal(onDisk, stdout)
   })
 

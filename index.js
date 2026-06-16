@@ -67,7 +67,8 @@ function parseSteps(path) {
   let m
   while ((m = re.exec(path)) !== null) {
     if (m[1] !== undefined) steps.push({ type: 'prop', name: m[1] })
-    else if (m[2] !== undefined) steps.push({ type: 'index', index: Number(m[2]) })
+    else if (m[2] !== undefined)
+      steps.push({ type: 'index', index: Number(m[2]) })
     else steps.push({ type: 'iter' })
   }
   return steps
