@@ -61,13 +61,28 @@ void (async function main() {
 
 function parseSteps(path) {
   const steps = []
-  const re = /\.([a-zA-Z_][a-zA-Z_0-9]*)|\.?\[(\d+)]/g
+  const re = /\.([a-zA-Z_][a-zA-Z_0-9]*)|\.?\[(\d+)]|\.?\[]/g
   let m
   while ((m = re.exec(path)) !== null) {
     if (m[1] !== undefined) steps.push({ type: 'prop', name: m[1] })
-    else steps.push({ type: 'index', index: Number(m[2]) })
+    else if (m[2] !== undefined) steps.push({ type: 'index', index: Number(m[2]) })
+    else steps.push({ type: 'iter' })
   }
   return steps
+}
+
+// Wrap value nodes into a synthetic Array node so output stays valid MAML.
+function arrayNode(values) {
+  return {
+    type: 'Array',
+    elements: values.map((value) => ({
+      value,
+      leadingComments: [],
+      trailingComment: null,
+      emptyLineBefore: false,
+    })),
+    danglingComments: [],
+  }
 }
 
 // Descend one step into a node, returning the child's value node.
@@ -89,15 +104,32 @@ function descend(current, step) {
 }
 
 function query(node, path) {
-  let current = node
-  for (const step of parseSteps(path)) current = descend(current, step)
-  return current
+  let nodes = [node]
+  let iterated = false
+  for (const step of parseSteps(path)) {
+    if (step.type === 'iter') {
+      const next = []
+      for (let current of nodes) {
+        if (current.type === 'Document') current = current.value
+        if (current.type !== 'Array')
+          throw new Error(`Cannot iterate [] on ${current.type}`)
+        for (const el of current.elements) next.push(el.value)
+      }
+      nodes = next
+      iterated = true
+    } else {
+      nodes = nodes.map((current) => descend(current, step))
+    }
+  }
+  return iterated ? arrayNode(nodes) : nodes[0]
 }
 
 // Assign a parsed maml value to the node at `path`, mutating in place.
 function assign(node, path, valueText) {
   const steps = parseSteps(path)
   if (steps.length === 0) throw new Error('Cannot assign to root')
+  if (steps.some((s) => s.type === 'iter'))
+    throw new Error('Cannot assign through [] iteration')
 
   let value = parse(valueText)
   if (value.type === 'Document') value = value.value

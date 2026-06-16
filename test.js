@@ -76,6 +76,40 @@ describe('query', () => {
   })
 })
 
+describe('iterate', () => {
+  test('.[] returns all elements', () => {
+    const { stdout } = mx([1, 2, 3], '.[]')
+    assert.equal(stdout, '[\n  1\n  2\n  3\n]\n')
+  })
+
+  test('.[].prop maps over array', () => {
+    const { stdout } = mx([{ name: 'a' }, { name: 'b' }], '.[].name')
+    assert.equal(stdout, '[\n  "a"\n  "b"\n]\n')
+  })
+
+  test('.prop[].nested maps over nested array', () => {
+    const { stdout } = mx({ users: [{ name: 'a' }, { name: 'b' }] }, '.users[].name')
+    assert.equal(stdout, '[\n  "a"\n  "b"\n]\n')
+  })
+
+  test('chained [] flattens', () => {
+    const { stdout } = mx([{ tags: ['a', 'b'] }, { tags: ['c'] }], '.[].tags[]')
+    assert.equal(stdout, '[\n  "a"\n  "b"\n  "c"\n]\n')
+  })
+
+  test('error iterating non-array', () => {
+    const { status, stderr } = mx({ a: 1 }, '.[]')
+    assert.equal(status, 1)
+    assert.match(stderr, /Cannot iterate \[] on Object/)
+  })
+
+  test('error assigning through []', () => {
+    const { status, stderr } = mx([{ x: 1 }], '.[].x = 5')
+    assert.equal(status, 1)
+    assert.match(stderr, /Cannot assign through \[] iteration/)
+  })
+})
+
 describe('assign', () => {
   test('replaces scalar', () => {
     const { stdout } = mx({ a: 1 }, '.a = 42')

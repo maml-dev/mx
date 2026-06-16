@@ -36,11 +36,20 @@ Drill into data with dot notation:
 .prop.nested     nested access
 .[0]             array index
 .items[2].name   mixed access
+.[]              iterate over array
+.users[].name    map field over array
 ```
 
 ```bash
 mx data.maml .users[0].name
 cat data.maml | mx .config.server.port
+```
+
+Iterate over an array with `[]`. The results are collected back into an
+array, so the output stays valid MAML:
+
+```bash
+mx data.maml '.users[].name'
 ```
 
 ## Edit
